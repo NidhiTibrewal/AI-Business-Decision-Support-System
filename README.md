@@ -15,9 +15,7 @@ a manager could actually approve.
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Generate the demo dataset (synthetic, shaped like the Walmart
-#    Recruiting "Store Sales Forecasting" dataset — swap in the real CSVs
-#    under data/raw/ and nothing downstream changes)
+# 2. Generate the demo dataset
 python data/generate_synthetic_data.py
 
 # 3. Run the full analytical pipeline end-to-end, module by module
