@@ -33,29 +33,9 @@ uvicorn app.api:app --reload --port 8000
 Every module also runs standalone for debugging:
 `python src/module3_forecasting.py`, etc.
 
-**Note on optional dependencies:** `xgboost`, `shap`, `ortools`, `prophet`,
-and `mlflow` are all used when installed, but every module has a documented,
-functionally-equivalent fallback (GradientBoostingRegressor, permutation
-importance, `scipy.optimize.linprog`, local JSON logging) so the pipeline
-still runs — with a printed notice of which backend is active — in a
-restricted environment. This was deliberate: a project that only works with
-every optional dependency perfectly installed is a fragile thing to demo.
-
 ---
 
-## 2. Why this is a decision-support tool, not an ML pipeline
-
-| What's usually built | What this project does instead |
-|---|---|
-| A model that outputs a number | A recommendation with a *reason* and a *confidence level* attached |
-| One fixed report | Live scenario analysis — change the budget or capacity, get a new plan instantly |
-| A point forecast | A forecast **with a prediction interval**, and the interval actually does something downstream |
-| An open-ended chatbot | Fixed, grounded query templates — lower hallucination risk, easier to demo |
-| "Here's the code" | "Here's the tradeoff I made, and here's why" |
-
----
-
-## 3. Architecture
+## 2. Architecture
 
 ```
 Raw Retail Data (Sales, Inventory, Stores, Calendar)
@@ -87,7 +67,7 @@ why it isn't drawn as its own box above.
 
 ---
 
-## 4. Project layout
+## 3. Project layout
 
 ```
 inventory-platform/
@@ -115,15 +95,14 @@ inventory-platform/
 
 ---
 
-## 5. The centerpiece: confidence-weighted allocation (Module 5)
+## 4. The centerpiece: confidence-weighted allocation (Module 5)
 
 The optimizer does not treat every forecast equally. A wide prediction
 interval (low confidence) pulls the demand estimate fed into the LP down
 toward the interval's lower bound; a tight interval (high confidence)
 allocates near the full point forecast.
 
-**The exact formula** (this is the one thing in the whole project you
-should be able to derive on a whiteboard without notes):
+**The exact formula**:
 
 ```
 effective_demand = lower_bound + confidence_score × (forecast − lower_bound)
@@ -154,8 +133,7 @@ is just "call it again with different arguments":
   linearized lost-sale penalty on any unmet effective demand
 - **Subject to:** per-store capacity, total warehouse capacity, and an
   optional budget cap
-- **Solver:** Google OR-Tools (GLOP) when installed; `scipy.optimize.linprog`
-  fallback with an identical formulation otherwise
+- **Solver:** Google OR-Tools (GLOP)
 
 Scenario analysis (`run_scenario` in the same file) re-runs this function
 with a changed `CostParams` — a 10% budget cut, more warehouse capacity, a
@@ -165,7 +143,7 @@ actually negotiate with."
 
 ---
 
-## 6. Module-by-module notes
+## 5. Module-by-module notes
 
 | Module | Key design decision | Why |
 |---|---|---|
@@ -181,7 +159,7 @@ actually negotiate with."
 
 ---
 
-## 7. Tech stack
+## 6. Tech stack
 
 | Layer | Tools |
 |---|---|
@@ -195,48 +173,3 @@ actually negotiate with."
 | Deployment | Docker, Render/Railway |
 
 ---
-
-## 8. Resume bullet
-
-> **Decision-Centric Inventory Allocation Platform** — Built an end-to-end
-> decision-support system that forecasts retail demand with prediction
-> intervals, segments stores by behavior, and recommends inventory
-> allocation via a confidence-weighted Google OR-Tools optimization that
-> adapts to forecast uncertainty and live scenario changes (budget,
-> capacity, demand shocks). Added SHAP-based explainability and a templated
-> generative-AI layer that explains recommendations in plain language,
-> grounded in real model outputs. Tracked experiments in MLflow; deployed
-> via FastAPI + Streamlit on Docker.
-
----
-
-## 9. Interview talking points
-
-Be ready to walk through each of these without notes:
-
-1. **The confidence-shrinkage formula** — derive it live:
-   `effective_demand = lower_bound + confidence_score × (forecast − lower_bound)`,
-   and explain what happens at confidence = 0 and confidence = 1.
-2. **Why walk-forward validation, not a random split**, for time series —
-   and what metric would look artificially good under a random split.
-3. **The full LP** — objective function, every constraint, and what
-   changes in the solution when you relax the budget constraint by 10%.
-4. **Why SHAP is capped to the top 3-4 drivers** instead of showing every
-   feature's contribution.
-5. **Why templated LLM workflows instead of open-ended chat** — the
-   hallucination risk being avoided, and what "grounded in structured
-   JSON" actually means mechanically.
-6. **One decision you reversed mid-build, and why** — e.g., this project
-   originally would have listed "Business KPI Generation" as its own
-   architecture stage; it was folded into Module 2's EDA output once it
-   became clear it was a set of derived numbers, not a distinct process.
-
----
-
-## 10. Extending this to a real dataset
-
-Swap `data/raw/{sales,stores,calendar}.csv` for real files with the same
-columns and nothing downstream needs to change. If using the Walmart
-Recruiting dataset specifically: `temperature`, `fuel_price`, `cpi`, and
-`unemployment` already ship with it per store/week — don't rebuild that as
-new "external data" engineering work; check your source file first.
