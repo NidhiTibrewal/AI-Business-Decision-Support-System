@@ -12,20 +12,24 @@ a manager could actually approve.
 ## 1. Quickstart
 
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Generate the demo dataset
-python data/generate_synthetic_data.py
-
-# 3. Run the full analytical pipeline end-to-end, module by module
+python data/prepare_walmart_data.py   # converts data/raw_walmart/*.csv -> data/raw/{sales,stores,calendar}.csv
 python run_pipeline.py
+streamlit run app/dashboard.py
 
 # 4. Launch the dashboard
 streamlit run app/dashboard.py
 
 # 5. Or launch the API
 uvicorn app.api:app --reload --port 8000
+```
+**Option B — synthetic demo data** (no real dataset needed):
+
+```bash
+pip install -r requirements.txt
+python data/generate_synthetic_data.py
+python run_pipeline.py
+streamlit run app/dashboard.py
 ```
 
 Every module also runs standalone for debugging:
